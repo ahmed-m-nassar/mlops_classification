@@ -1,0 +1,27 @@
+base: 
+  project: loan-marketing
+  random_state: 42
+  target_col: y
+
+data_source:
+  kaggle_source:
+
+load_data:
+  training_raw_dataset_csv: data\raw\new_train.csv
+  testing_raw_dataset_csv: data\raw\new_test.csv
+
+database: 
+  config:
+    host: localhost
+    dbname: postgres
+    user: postgres
+    password: admin
+    port: 5432
+
+  train_table_name: loan_marketing_master_train
+  test_table_name: loan_marketing_master_test
+
+split_data: 
+  train_test_split: 0.2
+
+model_dir : models
