@@ -1,0 +1,19 @@
+{
+	"ColName": {
+		"age" : "INTEGER",
+		"job": "VARCHAR(255)",
+		"marital": "VARCHAR(255)",
+		"education": "VARCHAR(255)",
+		"default": "VARCHAR(255)",
+		"housing": "VARCHAR(255)",
+		"loan": "VARCHAR(255)",
+		"contact": "VARCHAR(255)" ,
+        "month": "VARCHAR(255)" ,
+        "day_of_week": "VARCHAR(255)" ,
+        "duration": "INTEGER" ,
+        "campaign": "INTEGER" ,
+        "pdays": "INTEGER" ,
+        "previous": "INTEGER" ,
+        "poutcome": "VARCHAR(255)" ,
+        "y": "VARCHAR(255)"     }
+}
