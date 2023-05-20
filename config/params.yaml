@@ -10,6 +10,10 @@ load_data:
   training_raw_dataset_csv: data\raw\new_train.csv
   testing_raw_dataset_csv: data\raw\new_test.csv
 
+schemas:
+  training_schema_path: config\schema_training.json
+  prediction_schemas_path : config\schema_prediction.json
+
 database: 
   config:
     host: localhost
