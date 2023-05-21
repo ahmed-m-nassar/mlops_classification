@@ -12,7 +12,7 @@ load_data:
 
 schemas:
   training_schema_path: config\schema_training.json
-  prediction_schemas_path : config\schema_prediction.json
+  prediction_schema_path : config\schema_prediction.json
 
 database: 
   config:
