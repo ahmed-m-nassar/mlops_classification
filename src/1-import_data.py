@@ -117,9 +117,10 @@ if __name__ == "__main__" :
     training_df = preprocess_columns(training_df ,
                        params['schemas']['training_schema_path'])
     
-    
+    #generating insert query
     insert_query = generate_insert_into_table_query(params['database']['train_table_name'],
                                                     params['schemas']['training_schema_path'])
+    
     records = training_df.to_records(index=False)
     values = [tuple(record) for record in records]
     database_cursor.executemany(insert_query, values)

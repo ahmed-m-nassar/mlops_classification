@@ -11,7 +11,5 @@
     "day_of_week": "VARCHAR(255)" ,
     "duration": "INTEGER" ,
     "campaign": "INTEGER" ,
-    "pdays": "INTEGER" ,
-    "previous": "INTEGER" ,
     "poutcome": "VARCHAR(255)" 
 }

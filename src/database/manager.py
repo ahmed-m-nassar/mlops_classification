@@ -9,6 +9,8 @@ Classes:
 """
 
 from database.connection import Connection
+from utils.schema_reader import SchemaReader
+import pandas as pd
 
 class DatabaseManager:
     """
@@ -70,3 +72,36 @@ class DatabaseManager:
         for value in values:
             self.connection.execute_query(query % tuple(value))
         self.connection.disconnect()
+        
+    def select_from_table(self, table_name, schema_file_path, column_names=None):
+        """
+        Executes a SELECT query on a table in the database.
+
+        Args:
+            table_name (str): The name of the table to select from.
+            schema_file_path (str): The file path to the database schema file.
+            column_names (list, optional): A list of column names to select (default is None).
+
+        Returns:
+            pd.DataFrame: A Pandas DataFrame containing the result of the query.
+        """
+        if column_names is None:
+            query = f"SELECT * FROM {table_name}"
+        else:
+            columns = ", ".join(column_names)
+            query = f"SELECT {columns} FROM {table_name}"
+
+        self.connection.connect()
+        result = self.connection.execute_query(query, fetch_result=True)
+        self.connection.disconnect()
+
+        if result:
+            # Retrieve column names from the database schema
+            if column_names is None:
+                schema_reader = SchemaReader(schema_file_path)
+                column_names = schema_reader.get_column_names()
+
+            df = pd.DataFrame(result, columns=column_names)
+            return df
+        else:
+            return pd.DataFrame()

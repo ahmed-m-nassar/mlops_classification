@@ -7,7 +7,7 @@ class SchemaReader:
 
     def __init__(self, schema_path):
         self.schema_path = schema_path
-        self.schema = self.read_schema()
+        self.schema = self._read_schema()
 
     def _read_schema(self):
         """
@@ -21,6 +21,9 @@ class SchemaReader:
 
         return schema_data
 
+    def get_schema_path(self):
+        return self.schema_path
+        
     def get_column_names(self):
         """
         Returns the column names from the table schema.
@@ -28,11 +31,11 @@ class SchemaReader:
         Returns:
             list: A list of column names.
         """
-        return list(self.schema.keys())
+        return ['"' + name + '"' for name in self.schema.keys()]
 
-    def get_data_types(self):
+    def get_schema(self):
         """
-        Returns the data types from the table schema.
+        Returns the schema.
 
         Returns:
             dict: A dictionary mapping column names to data types.
@@ -46,6 +49,13 @@ class SchemaReader:
         Returns:
             list: a list of names of INTEGER columns.
         """
-        integer_columns = [column for column, datatype in self.schema_data.items() if datatype == 'INTEGER']
+        integer_columns = [column for column, datatype in self.schema.items() if datatype == 'INTEGER']
         return integer_columns
 
+    def get_col_name_data_type_str(self) :
+        col_datatype = ""
+        for column, datatype in self.schema.items():
+            col_datatype += f'"{column}" {datatype}, '
+        
+        col_datatype = col_datatype[:-2] 
+        return col_datatype

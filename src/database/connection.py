@@ -61,15 +61,26 @@ class Connection:
         )
         self.cursor = self.connection.cursor()
 
-    def execute_query(self, query):
+    def execute_query(self, query, fetch_result=False):
         """
         Executes the provided query on the connected database.
 
         Args:
             query (str): The SQL query to execute.
+            fetch_result (bool, optional): Whether to fetch and return the result of the query (default is False).
+
+        Returns:
+            None or list: If fetch_result is True, returns a list of rows returned by the query. Otherwise, returns None.
         """
         self.cursor.execute(query)
         self.connection.commit()
+
+        if fetch_result:
+            rows = self.cursor.fetchall()
+            return rows
+        else:
+            return None
+
 
     def disconnect(self):
         """
