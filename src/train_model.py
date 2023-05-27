@@ -4,9 +4,8 @@ project_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
 sys.path.append(project_dir)
 
 from database.manager import DatabaseManager
-from data_cleaning.clean_data import DataCleaning
-from encoding.encoding import Encoding
-from feature_engineering.feature_engineering import FeatureEngineering
+from encoding.encoding import MapTargetValues, AddPoutcomeFlag
+from feature_engineering.feature_engineering import AddAgeFlag, SelectFeatures
 
 
 import yaml
@@ -59,32 +58,35 @@ if __name__ == "__main__":
 
     # Connect to the database
     db_manager = connect_to_database(params)
-    
     train_table_name = params['database']['train_table_name']
-    
     df = db_manager.select_from_table(table_name=train_table_name ,
                              schema_file_path=params['schemas']['training_schema_path'])
 
 
     #splitting dataframe
-    ############################################################
+    ########################################################################
     # Split the dataset into train and validation sets
     train_df, val_df = train_test_split(df, test_size=0.2, random_state=42 )
-    #############################################################
+    ########################################################################
     
     # Process training dataset
     ##########################################################################
-
-    # Instantiate the DataPreprocessor class
-    preprocessor = DataPreprocessor(include_target= True)
-
-    # Define the preprocessing steps for training data
-    training_pipeline = Pipeline([
-        ('preprocessor', preprocessor) ,
-        
+    map_target = MapTargetValues()
+    add_poutcome_flag = AddPoutcomeFlag()
+    add_age_flag = AddAgeFlag()
+    select_features = SelectFeatures(include_target=True)
+    
+    # Create the pipeline
+    pipeline = Pipeline([
+        ('map_target', map_target),
+        ('add_poutcome_flag', add_poutcome_flag),
+        ('add_age_flag', add_age_flag),
+        ('select_features', select_features)
     ])
 
-    # Apply the pipelines to your data
-    training_df = training_pipeline.fit_transform(df)
-    #############################################################################     
+    # Apply the pipeline to your dataset
+    train_df = pipeline.transform(train_df)
+    #############################################################################   
+    
+    print(train_df.head())  
     

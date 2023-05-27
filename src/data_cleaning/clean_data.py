@@ -1,21 +1,34 @@
-import pandas as pd
-import numpy as np
+class HandleMissingValues:
+    def __init__(self, strategy='mean'):
+        self.strategy = strategy
 
-class DataCleaning:
-    @staticmethod
-    def drop_missing_values(X):
-        # Drop rows with missing values
-        X = X.dropna()
+    def transform(self, X):
+        if self.strategy == 'mean':
+            X.fillna(X.mean(), inplace=True)
+        elif self.strategy == 'median':
+            X.fillna(X.median(), inplace=True)
+        elif self.strategy == 'mode':
+            X.fillna(X.mode().iloc[0], inplace=True)
+        else:
+            raise ValueError(f"Invalid strategy: {self.strategy}")
         return X
-    
-    @staticmethod
-    def handle_outliers_iqr(X, columns, threshold=1.5):
-        for col in columns:
-            q1 = np.percentile(X[col], 25)
-            q3 = np.percentile(X[col], 75)
-            iqr = q3 - q1
-            lower_bound = q1 - threshold * iqr
-            upper_bound = q3 + threshold * iqr
-            X.loc[X[col] < lower_bound, col] = lower_bound
-            X.loc[X[col] > upper_bound, col] = upper_bound
+
+class RemoveOutliers:
+    def __init__(self, method='iqr', multiplier=1.5):
+        self.method = method
+        self.multiplier = multiplier
+
+    def transform(self, X):
+        if self.method == 'iqr':
+            Q1 = X.quantile(0.25)
+            Q3 = X.quantile(0.75)
+            IQR = Q3 - Q1
+            lower_bound = Q1 - self.multiplier * IQR
+            upper_bound = Q3 + self.multiplier * IQR
+            X = X[(X >= lower_bound) & (X <= upper_bound)]
+        elif self.method == 'z-score':
+            z_scores = (X - X.mean()) / X.std()
+            X = X[abs(z_scores) <= self.multiplier]
+        else:
+            raise ValueError(f"Invalid method: {self.method}")
         return X

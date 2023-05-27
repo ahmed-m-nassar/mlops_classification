@@ -1,24 +1,17 @@
-import pandas as pd
-from sklearn.preprocessing import PolynomialFeatures, KBinsDiscretizer, StandardScaler
-
-class FeatureEngineering:
-    @staticmethod
-    def normalize(X, columns):
-        # Normalize the specified columns
-        scaler = StandardScaler()
-        X[columns] = scaler.fit_transform(X[columns])
-        return X
-    
-    @staticmethod
-    def add_age_flag(X):
+class AddAgeFlag:
+    def transform(self, X):
         X['"AgeFlag"'] = 0
         X.loc[X['"age"'] >= 61, '"AgeFlag"'] = 1
         X.loc[X['"age"'] <= 18, '"AgeFlag"'] = 1
         return X
+
+
+class SelectFeatures:
+    def __init__(self, include_target=False):
+        self.include_target = include_target
     
-    @staticmethod
-    def select_features(X, include_target=False):
+    def transform(self, X):
         selected_features = ['"duration"', '"campaign"', '"pdays"', '"previous"', '"poutcomeFlag"', '"AgeFlag"']
-        if include_target:
+        if self.include_target:
             selected_features.append('"y"')
         return X.loc[:, selected_features]
