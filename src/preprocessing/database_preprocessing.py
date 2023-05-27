@@ -1,4 +1,16 @@
-from utils.schema_reader import SchemaReader
+import os , sys
+
+# Get the current file's directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Construct the absolute path to the project directory
+project_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir))
+
+# Append the project directory to sys.path
+sys.path.append(project_dir)
+
+
+from src.utils.schema_reader import SchemaReader
 import numpy as np
 import pandas as pd
 

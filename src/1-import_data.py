@@ -1,10 +1,21 @@
-import psycopg2
-import pandas as pd
-import numpy as np
-import os
+import os , sys
+# Get the current file's directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# Construct the absolute path to the project directory
+project_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
+# Append the project directory to sys.path
+sys.path.append(project_dir)
+
 import yaml
-import argparse
-import json
+import pandas as pd
+import logging
+from database.manager import DatabaseManager
+from preprocessing.database_preprocessing import DatabasePreprocessor
+from utils.schema_reader import SchemaReader
+
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 
 
 def read_params_file(file_path):
@@ -15,116 +26,112 @@ def read_params_file(file_path):
         file_path (str): The path to the YAML parameters file.
 
     Returns:
-        dict: A dictionary containing the parameters read from the file.    
+        dict: A dictionary containing the parameters read from the file.
     """
     with open(file_path) as yaml_file:
         params = yaml.safe_load(yaml_file)
     return params
-    
-    
-def connect_to_database(host , dbname , user , password , port) :
+
+
+def connect_to_database(params):
     """
-    Establishes a connection to a PostgreSQL database and returns the connection object.
+    Connects to the database using the provided parameters.
 
     Args:
-        host (str): The hostname or IP address of the database server.
-        dbname (str): The name of the database.
-        user (str): The username to connect to the database.
-        password (str): The password for the database user.
-        port (int): The port number on which the database server is listening.
+        params (dict): Database connection parameters.
 
     Returns:
-        psycopg2.extensions.connection: A connection object representing the connection to the database.
+        DatabaseManager: An instance of DatabaseManager representing the database connection.
     """
-    return  psycopg2.connect(host =  host, dbname = dbname , user  = user ,
-                        password = password , port = port)
-    
-def generate_create_table_query (table_name, schema):
+    db_manager = DatabaseManager(dbname=params['database']['config']['dbname'],
+                                 host=params['database']['config']['host'],
+                                 user=params['database']['config']['user'],
+                                 port=params['database']['config']['port'],
+                                 password=params['database']['config']['password'])
+
+    return db_manager
+
+
+def create_table(db_manager, schema_reader, table_name):
     """
-    Generates a CREATE TABLE query based on the provided table name and schema.
+    Creates a table in the database.
 
     Args:
+        db_manager (DatabaseManager): An instance of DatabaseManager for database operations.
+        schema_reader (SchemaReader): An instance of SchemaReader to read the schema.
         table_name (str): The name of the table to be created.
-        schema (str): The path to a JSON schema file that defines the table schema.
 
     Returns:
-        str: The CREATE TABLE query.
+        None
     """
-    query = f"CREATE TABLE {table_name} ("
-    
-    with open(schema, 'r') as file:
-        schema = json.load(file)
-        
-    for column, datatype in schema.items():
-        query += f'"{column}" {datatype}, '
-    
-    query = query[:-2] + ")"
-    
-    return query
+    col_datatype = schema_reader.get_col_name_data_type_str()
+    db_manager.create_table(table_name=table_name, schema=col_datatype)
 
-def generate_insert_into_table_query(table_name , schema_path):
-    # Create the INSERT query
-    column_names =  read_column_names_from_schema(schema_path=schema_path)
-    placeholders = ', '.join(['%s'] * len(column_names))
-    column_names =  ', '.join(column_names)
-    insert_query = f"INSERT INTO {table_name} ({column_names}) VALUES ({placeholders})"
-    return insert_query
 
-def read_column_names_from_schema(schema_path) :
+def read_dataset(file_path):
     """
-    Extracts column names from a JSON file and returns them as a list with double quotes around each name.
+    Reads a dataset from a CSV file.
 
     Args:
-        json_file (str): The path to the JSON file containing the column names.
+        file_path (str): The path to the CSV file.
 
     Returns:
-        list: A list of column names with double quotes around each name.
+        pandas.DataFrame: The dataset as a DataFrame.
     """
-    with open(schema_path, 'r') as file:
-        schema_data = json.load(file)
+    dataset = pd.read_csv(file_path)
+    return dataset
 
-    column_names = ['"' + name + '"' for name in schema_data.keys()]
-    return column_names
-    
-def preprocess_columns(df , schema_path):
-    with open(schema_path, 'r') as file:
-        schema_data = json.load(file)
-    integer_columns = [column for column, datatype in schema_data.items() if datatype == "INTEGER"]
-    
-    for column in integer_columns:
-        df[column] = df[column].replace(np.nan, None).astype(pd.Int64Dtype())
-    return df
 
-if __name__ == "__main__" :
-    params = read_params_file(os.path.join('config' , 'params.yaml'))
-    database_connection = connect_to_database(host = params['database']['config']['host'] , 
-                                              dbname =  params['database']['config']['dbname'] ,
-                                              user = params['database']['config']['user'] ,
-                                              password =  params['database']['config']['password'] ,
-                                              port =  params['database']['config']['port'] )  
-    
-    database_cursor = database_connection.cursor() 
-    
-    #Creating training data query
-    create_training_table_query = generate_create_table_query(params['database']['train_table_name'] ,
-                                      params['schemas']['training_schema_path'])
-    #executing the query
-    database_cursor.execute(create_training_table_query)
-    
-    #loading training dataset
-    training_df = pd.read_csv(params['load_data']['training_raw_dataset_csv'])
-    #Preprocessing training dataset
-    training_df = preprocess_columns(training_df ,
-                       params['schemas']['training_schema_path'])
-    
-    #generating insert query
-    insert_query = generate_insert_into_table_query(params['database']['train_table_name'],
-                                                    params['schemas']['training_schema_path'])
-    
-    records = training_df.to_records(index=False)
+def insert_data(db_manager, schema_reader, table_name, dataset):
+    """
+    Inserts the data into the database.
+
+    Args:
+        db_manager (DatabaseManager): An instance of DatabaseManager for database operations.
+        schema_reader (SchemaReader): An instance of SchemaReader to get column names.
+        table_name (str): The name of the table to insert data into.
+        dataset (pandas.DataFrame): The dataset as a DataFrame.
+
+    Returns:
+        None
+    """
+    database_preprocessor = DatabasePreprocessor(schema_path=schema_reader.get_schema_path())
+    dataset = database_preprocessor.preprocess_df(dataset)
+    records = dataset.to_records(index=False)
     values = [tuple(record) for record in records]
-    database_cursor.executemany(insert_query, values)
-    
-    database_connection.commit()
 
-    database_cursor.close()
+    db_manager.insert_into_table(column_names=schema_reader.get_column_names(),
+                                 table_name=table_name,
+                                 values=values)
+
+
+if __name__ == "__main__":
+    # Read configuration parameters
+    params = read_params_file(os.path.join('config', 'params.yaml'))
+
+    # Connect to the database
+    db_manager = connect_to_database(params)
+
+    # Process training dataset
+    ########################################################################
+    train_table_name = params['database']['train_table_name']
+    train_schema_path = params['schemas']['training_schema_path']
+    train_dataset_path = params['load_data']['training_raw_dataset_csv']
+
+    schema_reader = SchemaReader(train_schema_path)
+    create_table(db_manager, schema_reader, train_table_name)
+    training_dataset = read_dataset(train_dataset_path)
+    insert_data(db_manager, schema_reader, train_table_name, training_dataset)
+    #########################################################################
+    
+    # Process test dataset
+    #########################################################################
+    test_table_name = params['database']['test_table_name']
+    test_schema_path = params['schemas']['prediction_schema_path']
+    test_dataset_path = params['load_data']['testing_raw_dataset_csv']
+
+    schema_reader = SchemaReader(test_schema_path)
+    create_table(db_manager, schema_reader, test_table_name)
+    test_dataset = read_dataset(test_dataset_path)
+    insert_data(db_manager, schema_reader, test_table_name, test_dataset)
+    ##########################################################################

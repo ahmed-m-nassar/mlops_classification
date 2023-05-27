@@ -7,9 +7,20 @@ Classes:
     DatabaseManager: A class for managing database operations such as creating tables and inserting data.
 
 """
+import os , sys
 
-from database.connection import Connection
-from utils.schema_reader import SchemaReader
+# Get the current file's directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Construct the absolute path to the project directory
+project_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir))
+
+# Append the project directory to sys.path
+sys.path.append(project_dir)
+
+
+from src.database.connection import Connection
+from src.utils.schema_reader import SchemaReader
 import pandas as pd
 
 class DatabaseManager:
