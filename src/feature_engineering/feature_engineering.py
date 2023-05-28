@@ -6,12 +6,9 @@ class AddAgeFlag:
         return X
 
 
-class SelectFeatures:
-    def __init__(self, include_target=False):
-        self.include_target = include_target
-    
+class SelectFeatures:    
     def transform(self, X):
         selected_features = ['"duration"', '"campaign"', '"pdays"', '"previous"', '"poutcomeFlag"', '"AgeFlag"']
-        if self.include_target:
+        if '"y"' in X.columns:
             selected_features.append('"y"')
         return X.loc[:, selected_features]
