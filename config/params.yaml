@@ -28,4 +28,7 @@ database:
 split_data: 
   train_test_split: 0.2
 
-model_dir : models
+model :
+  model_path : models\modek.pkl
+pipeline :
+  pipeline_path : pipeline\pipeline.pkl

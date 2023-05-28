@@ -16,7 +16,7 @@ import logging
 from sklearn.model_selection import GridSearchCV
 import xgboost as xgb
 from sklearn.metrics import confusion_matrix
-
+import pickle
 
 
 logging.basicConfig(level=logging.INFO)
@@ -171,3 +171,9 @@ if __name__ == "__main__":
 
     # Evaluate the model on the validation dataset
     evaluate_model(best_xgb_model, val_df_transformed)
+    
+    #Save model and pipeline
+    with open(params['model']['model_path'], 'wb') as file:
+        pickle.dump(best_xgb_model, file)
+    with open(params['pipeline']['pipeline_path'], 'wb') as file:
+        pickle.dump(pipeline, file)
